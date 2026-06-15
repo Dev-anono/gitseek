@@ -11,13 +11,14 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.use("/api/*", cors({ origin: "*", credentials: true }));
 
+const REDIRECT_URI = "https://gitseek.weloosp.workers.dev/api/auth/github/callback";
+
 // GitHub OAuth login — редирект на GitHub
 app.get("/api/auth/github/login", (c) => {
-	const redirectUri = `${new URL(c.req.url).origin}/api/auth/github/callback`;
 	const url =
 		"https://github.com/login/oauth/authorize" +
 		`?client_id=${c.env.GITHUB_CLIENT_ID}` +
-		`&redirect_uri=${encodeURIComponent(redirectUri)}` +
+		`&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
 		"&scope=repo,read:user";
 	return c.redirect(url);
 });
@@ -27,7 +28,6 @@ app.get("/api/auth/github/callback", async (c) => {
 	const code = c.req.query("code");
 	if (!code) return c.redirect("/?error=missing_code");
 
-	const redirectUri = `${new URL(c.req.url).origin}/api/auth/github/callback`;
 	const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
 		method: "POST",
 		headers: {
@@ -38,7 +38,7 @@ app.get("/api/auth/github/callback", async (c) => {
 			client_id: c.env.GITHUB_CLIENT_ID,
 			client_secret: c.env.GITHUB_CLIENT_SECRET,
 			code,
-			redirect_uri: redirectUri,
+			redirect_uri: REDIRECT_URI,
 		}),
 	});
 
