@@ -1,66 +1,48 @@
-// src/App.tsx
-
-import { useState } from "react";
-import reactLogo from "./assets/react.svg";
-import viteLogo from "/vite.svg";
-import cloudflareLogo from "./assets/Cloudflare_Logo.svg";
-import honoLogo from "./assets/hono.svg";
+import { useState, useCallback } from "react";
+import { isAuthenticated } from "./deepseekAPI.ts";
+import GitHubAuth from "./components/GitHubAuth.tsx";
+import RepoList from "./components/RepoList.tsx";
+import PRViewer from "./components/PRViewer.tsx";
 import "./App.css";
 
-function App() {
-	const [count, setCount] = useState(0);
-	const [name, setName] = useState("unknown");
+type Page = "auth" | "repos" | "pr";
+
+export default function App() {
+	const [page, setPage] = useState<Page>(isAuthenticated() ? "repos" : "auth");
+	const [repoOwner, setRepoOwner] = useState("");
+	const [repoName, setRepoName] = useState("");
+
+	const handleAuth = useCallback(() => setPage("repos"), []);
+
+	const handleRepoSelect = (owner: string, repo: string) => {
+		setRepoOwner(owner);
+		setRepoName(repo);
+		setPage("pr");
+	};
 
 	return (
-		<>
-			<div>
-				<a href="https://vite.dev" target="_blank">
-					<img src={viteLogo} className="logo" alt="Vite logo" />
-				</a>
-				<a href="https://react.dev" target="_blank">
-					<img src={reactLogo} className="logo react" alt="React logo" />
-				</a>
-				<a href="https://hono.dev/" target="_blank">
-					<img src={honoLogo} className="logo cloudflare" alt="Hono logo" />
-				</a>
-				<a href="https://workers.cloudflare.com/" target="_blank">
-					<img
-						src={cloudflareLogo}
-						className="logo cloudflare"
-						alt="Cloudflare logo"
-					/>
-				</a>
-			</div>
-			<h1>Vite + React + Hono + Cloudflare</h1>
-			<div className="card">
-				<button
-					onClick={() => setCount((count) => count + 1)}
-					aria-label="increment"
-				>
-					count is {count}
-				</button>
-				<p>
-					Edit <code>src/App.tsx</code> and save to test HMR
-				</p>
-			</div>
-			<div className="card">
-				<button
-					onClick={() => {
-						fetch("/api/")
-							.then((res) => res.json() as Promise<{ name: string }>)
-							.then((data) => setName(data.name));
-					}}
-					aria-label="get name"
-				>
-					Name from API is: {name}
-				</button>
-				<p>
-					Edit <code>worker/index.ts</code> to change the name
-				</p>
-			</div>
-			<p className="read-the-docs">Click on the logos to learn more</p>
-		</>
+		<div className="app">
+			<header className="app-header">
+				<h1 className="app-title" onClick={() => setPage("repos")}>gitseek</h1>
+				{isAuthenticated() && (
+					<nav className="app-nav">
+						<button className={`nav-btn ${page === "repos" ? "active" : ""}`} onClick={() => setPage("repos")}>
+							Репозитории
+						</button>
+						{page === "pr" && (
+							<button className={`nav-btn ${page === "pr" ? "active" : ""}`} onClick={() => setPage("pr")}>
+								{repoOwner}/{repoName}
+							</button>
+						)}
+					</nav>
+				)}
+			</header>
+
+			<main className="app-main">
+				{page === "auth" && <GitHubAuth onAuth={handleAuth} />}
+				{page === "repos" && <RepoList onSelect={handleRepoSelect} />}
+				{page === "pr" && <PRViewer owner={repoOwner} repo={repoName} />}
+			</main>
+		</div>
 	);
 }
-
-export default App;
