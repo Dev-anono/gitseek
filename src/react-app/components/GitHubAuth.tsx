@@ -1,41 +1,27 @@
 import { useEffect, useState } from "react";
-import { exchangeGithubCode, isAuthenticated, clearToken } from "../deepseekAPI.ts";
-
-const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || "";
-const REDIRECT_URI = import.meta.env.VITE_REDIRECT_URI || window.location.origin;
+import { setToken, isAuthenticated, clearToken } from "../deepseekAPI.ts";
 
 export default function GitHubAuth({ onAuth }: { onAuth: () => void }) {
-	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState("");
 
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
-		const code = params.get("code");
-		if (code) {
-			setLoading(true);
-			exchangeGithubCode(code)
-				.then(() => {
-					window.history.replaceState({}, "", window.location.pathname);
-					onAuth();
-				})
-				.catch((e) => setError(e.message))
-				.finally(() => setLoading(false));
+		const token = params.get("token");
+		const err = params.get("error");
+
+		if (token) {
+			setToken(token);
+			window.history.replaceState({}, "", window.location.pathname);
+			onAuth();
+		} else if (err) {
+			setError(decodeURIComponent(err));
+			window.history.replaceState({}, "", window.location.pathname);
 		}
 	}, [onAuth]);
 
 	const handleLogin = () => {
-		const url = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&scope=repo`;
-		window.location.href = url;
+		window.location.href = "/api/auth/github/login";
 	};
-
-	if (loading) {
-		return (
-			<div className="auth-screen">
-				<div className="spinner" />
-				<p>Авторизация через GitHub...</p>
-			</div>
-		);
-	}
 
 	if (isAuthenticated()) {
 		return (

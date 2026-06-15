@@ -51,15 +51,6 @@ async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
 	return res.json();
 }
 
-export async function exchangeGithubCode(code: string): Promise<string> {
-	const data = await apiFetch<{ token: string }>("/auth/github", {
-		method: "POST",
-		body: JSON.stringify({ code }),
-	});
-	setToken(data.token);
-	return data.token;
-}
-
 export async function fetchRepos(): Promise<any[]> {
 	return apiFetch<any[]>("/user/repos");
 }

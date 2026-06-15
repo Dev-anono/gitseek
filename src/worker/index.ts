@@ -11,31 +11,43 @@ const app = new Hono<{ Bindings: Env }>();
 
 app.use("/api/*", cors({ origin: "*", credentials: true }));
 
-// GitHub OAuth callback — обменивает code на токен
-app.post("/api/auth/github", async (c) => {
-	const { code } = await c.req.json<{ code: string }>();
-	if (!code) return c.json({ error: "Missing code" }, 400);
+// GitHub OAuth login — редирект на GitHub
+app.get("/api/auth/github/login", (c) => {
+	const redirectUri = `${new URL(c.req.url).origin}/api/auth/github/callback`;
+	const url =
+		"https://github.com/login/oauth/authorize" +
+		`?client_id=${c.env.GITHUB_CLIENT_ID}` +
+		`&redirect_uri=${encodeURIComponent(redirectUri)}` +
+		"&scope=repo,read:user";
+	return c.redirect(url);
+});
 
-	const tokenRes = await fetch(
-		"https://github.com/login/oauth/access_token",
-		{
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json",
-				Accept: "application/json",
-			},
-			body: JSON.stringify({
-				client_id: c.env.GITHUB_CLIENT_ID,
-				client_secret: c.env.GITHUB_CLIENT_SECRET,
-				code,
-			}),
+// GitHub OAuth callback — обмен code на токен и редирект на /
+app.get("/api/auth/github/callback", async (c) => {
+	const code = c.req.query("code");
+	if (!code) return c.redirect("/?error=missing_code");
+
+	const redirectUri = `${new URL(c.req.url).origin}/api/auth/github/callback`;
+	const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			Accept: "application/json",
 		},
-	);
+		body: JSON.stringify({
+			client_id: c.env.GITHUB_CLIENT_ID,
+			client_secret: c.env.GITHUB_CLIENT_SECRET,
+			code,
+			redirect_uri: redirectUri,
+		}),
+	});
 
 	const data = await tokenRes.json<{ access_token?: string; error?: string }>();
-	if (!data.access_token) return c.json({ error: data.error || "Auth failed" }, 400);
+	if (!data.access_token) {
+		return c.redirect(`/?error=${data.error || "auth_failed"}`);
+	}
 
-	return c.json({ token: data.access_token });
+	return c.redirect(`/?token=${data.access_token}`);
 });
 
 // Список репозиториев пользователя
