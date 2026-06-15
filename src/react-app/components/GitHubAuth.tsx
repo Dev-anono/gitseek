@@ -4,22 +4,28 @@ import { setToken, isAuthenticated, clearToken } from "../deepseekAPI.ts";
 export default function GitHubAuth({ onAuth }: { onAuth: () => void }) {
 	const [error, setError] = useState("");
 
+	console.log("[GitHubAuth] render, authenticated:", isAuthenticated());
+
 	useEffect(() => {
 		const params = new URLSearchParams(window.location.search);
 		const token = params.get("token");
 		const err = params.get("error");
+		console.log("[GitHubAuth] mount, token:", !!token, "error:", err);
 
 		if (token) {
+			console.log("[GitHubAuth] saving token to localStorage");
 			setToken(token);
 			window.history.replaceState({}, "", window.location.pathname);
 			onAuth();
 		} else if (err) {
+			console.log("[GitHubAuth] auth error:", err);
 			setError(decodeURIComponent(err));
 			window.history.replaceState({}, "", window.location.pathname);
 		}
 	}, [onAuth]);
 
 	const handleLogin = () => {
+		console.log("[GitHubAuth] handleLogin clicked, redirecting to /api/auth/github/login");
 		window.location.href = "/api/auth/github/login";
 	};
 
