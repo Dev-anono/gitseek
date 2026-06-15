@@ -11,10 +11,5 @@
 	"assets": {
 		"directory": "./dist/client",
 		"not_found_handling": "single-page-application"
-	},
-	"vars": {
-		"GITHUB_CLIENT_ID": "",
-		"GITHUB_CLIENT_SECRET": "",
-		"DEEPSEEK_API_KEY": ""
 	}
 }
