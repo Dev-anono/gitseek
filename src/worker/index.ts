@@ -14,7 +14,7 @@ app.use("/api/*", cors({ origin: "*", credentials: true }));
 // GitHub OAuth callback — обменивает code на токен
 app.post("/api/auth/github", async (c) => {
 	const { code } = await c.req.json<{ code: string }>();
-	if (!code) return c.json({ error: "Missing code" }, 400);
+	if (!code) return c.json({ error: "Missing code" }, { status: 400 });
 
 	const tokenRes = await fetch(
 		"https://github.com/login/oauth/access_token",
@@ -33,7 +33,7 @@ app.post("/api/auth/github", async (c) => {
 	);
 
 	const data = await tokenRes.json<{ access_token?: string; error?: string }>();
-	if (!data.access_token) return c.json({ error: data.error || "Auth failed" }, 400);
+	if (!data.access_token) return c.json({ error: data.error || "Auth failed" }, { status: 400 });
 
 	return c.json({ token: data.access_token });
 });
@@ -41,12 +41,12 @@ app.post("/api/auth/github", async (c) => {
 // Список репозиториев пользователя
 app.get("/api/user/repos", async (c) => {
 	const token = c.req.header("Authorization")?.replace("Bearer ", "");
-	if (!token) return c.json({ error: "Unauthorized" }, 401);
+	if (!token) return c.json({ error: "Unauthorized" }, { status: 401 });
 
 	const res = await fetch("https://api.github.com/user/repos?per_page=100&type=all", {
 		headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3+json" },
 	});
-	if (!res.ok) return c.json({ error: "GitHub API error" }, res.status);
+	if (!res.ok) return c.json({ error: "GitHub API error" }, { status: res.status });
 
 	const repos = await res.json<any[]>();
 	return c.json(repos.map((r: any) => ({
@@ -64,7 +64,7 @@ app.get("/api/user/repos", async (c) => {
 // Список PR репозитория
 app.get("/api/repos/:owner/:repo/pulls", async (c) => {
 	const token = c.req.header("Authorization")?.replace("Bearer ", "");
-	if (!token) return c.json({ error: "Unauthorized" }, 401);
+	if (!token) return c.json({ error: "Unauthorized" }, { status: 401 });
 
 	const { owner, repo } = c.req.param();
 	const res = await fetch(
@@ -73,7 +73,7 @@ app.get("/api/repos/:owner/:repo/pulls", async (c) => {
 			headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3+json" },
 		},
 	);
-	if (!res.ok) return c.json({ error: "GitHub API error" }, res.status);
+	if (!res.ok) return c.json({ error: "GitHub API error" }, { status: res.status });
 
 	const pulls = await res.json<any[]>();
 	return c.json(pulls.map((p: any) => ({
@@ -91,7 +91,7 @@ app.get("/api/repos/:owner/:repo/pulls", async (c) => {
 // Файлы изменённые в PR с кодом
 app.get("/api/repos/:owner/:repo/pulls/:number/files", async (c) => {
 	const token = c.req.header("Authorization")?.replace("Bearer ", "");
-	if (!token) return c.json({ error: "Unauthorized" }, 401);
+	if (!token) return c.json({ error: "Unauthorized" }, { status: 401 });
 
 	const { owner, repo, number } = c.req.param();
 	const res = await fetch(
@@ -100,7 +100,7 @@ app.get("/api/repos/:owner/:repo/pulls/:number/files", async (c) => {
 			headers: { Authorization: `Bearer ${token}`, Accept: "application/vnd.github.v3+json" },
 		},
 	);
-	if (!res.ok) return c.json({ error: "GitHub API error" }, res.status);
+	if (!res.ok) return c.json({ error: "GitHub API error" }, { status: res.status });
 
 	const files = await res.json<any[]>();
 
@@ -146,10 +146,10 @@ app.get("/api/repos/:owner/:repo/pulls/:number/files", async (c) => {
 // Анализ кода через DeepSeek
 app.post("/api/analyze", async (c) => {
 	const token = c.req.header("Authorization")?.replace("Bearer ", "");
-	if (!token) return c.json({ error: "Unauthorized" }, 401);
+	if (!token) return c.json({ error: "Unauthorized" }, { status: 401 });
 
 	const { code, filename } = await c.req.json<{ code: string; filename: string }>();
-	if (!code) return c.json({ error: "Missing code" }, 400);
+	if (!code) return c.json({ error: "Missing code" }, { status: 400 });
 
 	const systemPrompt = `Ты — экспертный ревьюер кода. Проанализируй предоставленный код и найди:
 1. **Багги** — логические ошибки, потенциальные краши
@@ -187,7 +187,7 @@ app.post("/api/analyze", async (c) => {
 
 	if (!deepseekRes.ok) {
 		const errText = await deepseekRes.text();
-		return c.json({ error: `DeepSeek API error: ${errText}` }, 502);
+		return c.json({ error: `DeepSeek API error: ${errText}` }, { status: 502 });
 	}
 
 	const deepseekData = await deepseekRes.json<any>();
@@ -203,7 +203,7 @@ app.post("/api/analyze", async (c) => {
 		const analysis = JSON.parse(jsonStr);
 		return c.json({ analysis, filename });
 	} catch {
-		return c.json({ error: "Failed to parse DeepSeek response", raw: content }, 500);
+		return c.json({ error: "Failed to parse DeepSeek response", raw: content }, { status: 500 });
 	}
 });
 

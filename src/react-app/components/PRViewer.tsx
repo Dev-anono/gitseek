@@ -5,7 +5,6 @@ type ViewMode = "list" | "files" | "review";
 
 export default function PRViewer({ owner, repo }: { owner: string; repo: string }) {
 	const [prs, setPrs] = useState<any[]>([]);
-	const [selectedPR, setSelectedPR] = useState<number | null>(null);
 	const [files, setFiles] = useState<any[]>([]);
 	const [selectedFile, setSelectedFile] = useState<string | null>(null);
 	const [analysis, setAnalysis] = useState<Record<string, AnalysisResult>>({});
@@ -22,7 +21,6 @@ export default function PRViewer({ owner, repo }: { owner: string; repo: string 
 	}, [owner, repo]);
 
 	const openPR = async (number: number) => {
-		setSelectedPR(number);
 		setMode("files");
 		setFiles([]);
 		setSelectedFile(null);
@@ -55,7 +53,7 @@ export default function PRViewer({ owner, repo }: { owner: string; repo: string 
 	return (
 		<div className="pr-viewer">
 			<div className="viewer-header">
-				<button className="btn btn-secondary" onClick={() => { setMode("list"); setSelectedPR(null); }}>
+				<button className="btn btn-secondary" onClick={() => { setMode("list"); }}>
 					<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
 						<path d="M19 12H5" /><polyline points="12 19 5 12 12 5" />
 					</svg>

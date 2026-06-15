@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { exchangeGithubCode, isAuthenticated, clearToken, getTokenValue } from "../deepseekAPI.ts";
+import { exchangeGithubCode, isAuthenticated, clearToken } from "../deepseekAPI.ts";
 
 const GITHUB_CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || "";
 const REDIRECT_URI = import.meta.env.VITE_REDIRECT_URI || window.location.origin;
